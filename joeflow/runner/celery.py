@@ -23,7 +23,17 @@ __all__ = ["task_runner"]
 def _celery_task_runner(self, task_pk, workflow_pk):
     Task = apps.get_model("joeflow", "Task")
     with transaction.atomic():
-        task = Task.objects.select_for_update().get(pk=task_pk, completed=None)
+        try:
+            task = Task.objects.select_for_update().get(pk=task_pk, completed=None)
+        except Task.DoesNotExist as e:
+            # check if the task completed in a different worker (e.g. Join() task)
+            task = Task.objects.select_for_update().filter(pk=task_pk, completed__isnull=False).last()
+            if task:
+                return
+            else:
+                print(f"Task {task_pk} does not exist")
+                raise Task.DoesNotExist from e
+
         workflow = (
             task.content_type.model_class()
             .objects.select_for_update(nowait=True)
