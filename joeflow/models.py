@@ -563,11 +563,13 @@ class Task(models.Model):
         symmetrical=False,
     )
 
+    CREATED = "created"
     FAILED = "failed"
     SUCCEEDED = "succeeded"
     SCHEDULED = "scheduled"
     CANCELED = "canceled"
     _status_choices = (
+        (CREATED, t(CREATED)),
         (FAILED, t(FAILED)),
         (SUCCEEDED, t(SUCCEEDED)),
         (SCHEDULED, t(SCHEDULED)),
@@ -576,7 +578,7 @@ class Task(models.Model):
     status = models.CharField(
         max_length=50,
         choices=_status_choices,
-        default=SCHEDULED,
+        default=CREATED,
         editable=False,
         db_index=True,
     )
@@ -688,7 +690,7 @@ class Task(models.Model):
             celery.result.AsyncResult: Celery task result.
 
         """
-        if nodupe and self.status:
+        if nodupe and self.status == self.CREATED:
             return
 
         self.status = self.SCHEDULED
