@@ -690,7 +690,7 @@ class Task(models.Model):
             celery.result.AsyncResult: Celery task result.
 
         """
-        if nodupe and self.status == self.CREATED:
+        if nodupe and self.status != self.CREATED:
             return
 
         self.status = self.SCHEDULED
