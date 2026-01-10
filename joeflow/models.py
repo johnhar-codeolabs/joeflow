@@ -671,7 +671,7 @@ class Task(models.Model):
         self.stacktrace = "".join(tb)
         self.save(update_fields=["status", "exception", "stacktrace"])
 
-    def enqueue(self, countdown=None, eta=None):
+    def enqueue(self, countdown=None, eta=None, nodupe=False):
         """Schedule the tasks for execution.
 
         Args:
@@ -681,10 +681,16 @@ class Task(models.Model):
             eta (datetime.datetime):
                 Time at which the task should be started.
 
+            nodupe (bool):
+                If True, prevent duplicate tasks from being enqueued.
+
         Returns:
             celery.result.AsyncResult: Celery task result.
 
         """
+        if nodupe and self.status:
+            return
+
         self.status = self.SCHEDULED
         self.completed = None
         self.exception = ""
